@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bifrost Intelligence Workspace</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans h-screen flex flex-col antialiased">
+
+  <header class="bg-white border-b border-slate-200 px-6 py-4 shadow-xs shrink-0 flex items-center justify-between z-10">
+    <div class="flex items-center space-x-3">
+      <div id="header-indicator" class="h-3 w-3 bg-emerald-500 rounded-full animate-pulse"></div>
+      <h1 id="header-title" class="text-lg font-bold text-slate-800 tracking-tight">Bifrost Team Intelligence Terminal</h1>
+    </div>
+    
+    <div class="flex items-center space-x-4">
+      <button id="nav-to-outcomes" onclick="toggleBifrostView('outcomes')" 
+              class="text-xs font-medium text-indigo-600 hover:text-indigo-800 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 transition-all cursor-pointer">
+        Open Outcome Studio →
+      </button>
+      <button id="nav-to-chat" onclick="toggleBifrostView('chat')" 
+              class="hidden text-xs font-medium text-indigo-600 hover:text-indigo-800 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 transition-all cursor-pointer">
+        ← Open Terminal Chat
+      </button>
+      <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200">
+        Bifrost Core Core Active
+      </span>
+    </div>
+  </header>
+
+  <div id="view-chat-terminal" class="flex-1 flex flex-col overflow-hidden">
+    <main id="chat-window" class="flex-1 overflow-y-auto px-6 py-8 space-y-6 custom-scrollbar max-w-4xl mx-auto w-full">
+      <div class="flex items-start space-x-4">
+        <div class="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm">AI</div>
+        <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-4 shadow-xs text-slate-700 max-w-2xl text-sm leading-relaxed">
+          <p>Ask me anything about past technical architectural updates, platform decisions, blockers, or team metrics across the timeline.</p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 p-4 shrink-0 shadow-md">
+      <div class="max-w-4xl mx-auto w-full flex items-center space-x-3 relative">
+        <textarea id="user-prompt" rows="1" 
+                  class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white resize-none max-h-32 custom-scrollbar transition-all"
+                  placeholder="Ask about team architectural decisions or milestones..."></textarea>
+        <button id="send-btn" onclick="handleSubmitQuery()" 
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm px-5 py-3 rounded-xl transition-all shadow-xs cursor-pointer flex items-center space-x-2 shrink-0">
+          <span>Send</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <div id="view-outcome-studio" class="hidden flex-1 overflow-hidden flex flex-col md:flex-row max-w-[1600px] w-full mx-auto">
+    <aside class="w-full md:w-96 bg-white border-b md:border-b-0 md:border-r border-slate-200 p-6 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
+      <div class="space-y-4 flex-1">
+        <div>
+          <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Initiative Parameter Profile</h2>
+          <p class="text-xs text-slate-500 mt-1 leading-relaxed">Input a recent milestone, ticket cluster, or framework adoption run. Bifrost will query Firestore, aggregate the historical standup timeline evidence, and compile your artifact document.</p>
+        </div>
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-slate-600 uppercase">Target Milestone / Project Scope</label>
+          <textarea id="initiative-input" rows="6" 
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white resize-none transition-all"
+                    placeholder="Example: We just wrapped up implementing the in-toto attestation framework for secure image sign-offs..."></textarea>
+        </div>
+      </div>
+      <div class="pt-6 border-t border-slate-100 mt-6">
+        <button id="synthesis-btn" onclick="executeStudioSynthesis()"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm py-3 px-4 rounded-xl transition-all shadow-xs cursor-pointer flex items-center justify-center space-x-2">
+          <span>Synthesize Statement</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="flex-1 bg-slate-50 overflow-y-auto p-6 md:p-12 custom-scrollbar flex flex-col">
+      <div class="max-w-3xl w-full mx-auto flex-1 flex flex-col">
+        <div id="canvas-empty" class="flex-1 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center p-8 text-center bg-white shadow-xs">
+          <div class="h-12 w-12 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center text-xl font-bold mb-4">📄</div>
+          <h3 class="text-sm font-bold text-slate-700">Studio Workspace Is Clear</h3>
+          <p class="text-xs text-slate-400 max-w-sm mt-1">Provide an engineering focus milestone description within the control panel to generate a corporate impact statement asset profile.</p>
+        </div>
+        <div id="canvas-loading" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center bg-white border border-slate-200 rounded-2xl shadow-xs">
+          <div class="flex items-center space-x-2 mb-4">
+            <div class="h-2 w-2 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+            <div class="h-2 w-2 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+            <div class="h-2 w-2 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+          </div>
+          <h3 class="text-sm font-bold text-slate-700">Mining & Hydrating Full Transcripts...</h3>
+          <p class="text-xs text-slate-400 max-w-xs mt-1">Running native nearest-neighbor coordinate matching loops and building executive data parameters across the historical database shards.</p>
+        </div>
+        <article id="canvas-document" class="hidden bg-white border border-slate-200 rounded-2xl p-8 md:p-12 shadow-sm flex-1 flex flex-col justify-between">
+          <div>
+            <div class="border-b border-slate-100 pb-6 mb-8 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded">Bifrost Certified Asset</span>
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight mt-1">Impact & Outcome Synthesis Summary</h2>
+              </div>
+              <div id="doc-timestamp" class="text-xs text-slate-400 font-mono"></div>
+            </div>
+            <div id="markdown-container" class="prose prose-slate prose-sm max-w-none leading-relaxed text-slate-700 space-y-6"></div>
+          </div>
+          <div class="border-t border-slate-100 pt-6 mt-12">
+            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Retrieved Evidence Verification Traces:</h4>
+            <div id="citations-container" class="flex flex-wrap gap-2"></div>
+          </div>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let runningChatHistory = [];
+
+    /**
+     * SPA VIEW LAYER CONTROLLER
+     * Toggles interface blocks instantly without page reloads or query parameter breaks
+     */
+    function toggleBifrostView(targetView) {
+      const chatTerminal = document.getElementById("view-chat-terminal");
+      const outcomeStudio = document.getElementById("view-outcome-studio");
+      const btnToOutcomes = document.getElementById("nav-to-outcomes");
+      const btnToChat = document.getElementById("nav-to-chat");
+      const title = document.getElementById("header-title");
+      const indicator = document.getElementById("header-indicator");
+
+      if (targetView === 'outcomes') {
+        chatTerminal.classList.add("hidden");
+        outcomeStudio.classList.remove("hidden");
+        btnToOutcomes.classList.add("hidden");
+        btnToChat.classList.remove("hidden");
+        title.innerText = "Bifrost Outcome Synthesis Studio";
+        indicator.className = "h-3 w-3 bg-indigo-600 rounded-sm transform rotate-45 animate-pulse";
+      } else {
+        outcomeStudio.classList.add("hidden");
+        chatTerminal.classList.remove("hidden");
+        btnToChat.classList.add("hidden");
+        btnToOutcomes.classList.remove("hidden");
+        title.innerText = "Bifrost Team Intelligence Terminal";
+        indicator.className = "h-3 w-3 bg-emerald-500 rounded-full animate-pulse";
+      }
+    }
+
+    // =====================================================================
+    // CORE CHAT TERMINAL MODULE FUNCTIONS
+    // =====================================================================
+    document.getElementById("user-prompt").addEventListener("keydown", function(e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmitQuery();
+      }
+    });
+
+    function appendMessageToTimeline(sender, messageText) {
+      const chatWindow = document.getElementById("chat-window");
+      const outerWrapper = document.createElement("div");
+      outerWrapper.className = "flex items-start space-x-4 " + (sender === 'user' ? 'justify-end' : '');
+
+      let identityBlock = '';
+      let textContainerClass = '';
+
+      if (sender === 'user') {
+        identityBlock = `<div class="h-8 w-8 rounded-lg bg-slate-800 flex items-center justify-center text-white font-bold text-xs shrink-0 order-2 ml-4">ME</div>`;
+        textContainerClass = `bg-indigo-600 text-white rounded-2xl rounded-tr-none p-4 shadow-xs max-w-2xl text-sm leading-relaxed order-1`;
+      } else {
+        identityBlock = `<div class="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shrink-0 mr-4">AI</div>`;
+        textContainerClass = `bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none p-4 shadow-xs max-w-2xl text-sm leading-relaxed prose prose-slate`;
+      }
+
+      const parsedContent = (sender === 'ai') ? marked.parse(messageText) : `<p class="whitespace-pre-wrap">${escapeHtml(messageText)}</p>`;
+      outerWrapper.innerHTML = `${identityBlock}<div class="${textContainerClass}">${parsedContent}</div>`;
+
+      chatWindow.appendChild(outerWrapper);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function injectLoadingIndicator() {
+      const chatWindow = document.getElementById("chat-window");
+      const indicator = document.createElement("div");
+      indicator.id = "bifrost-loading-node";
+      indicator.className = "flex items-start space-x-4";
+      indicator.innerHTML = `
+        <div class="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shrink-0 mr-4">AI</div>
+        <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-4 shadow-xs flex items-center space-x-2">
+          <div class="h-2 w-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+          <div class="h-2 w-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+          <div class="h-2 w-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+        </div>`;
+      chatWindow.appendChild(indicator);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function removeLoadingIndicator() {
+      const node = document.getElementById("bifrost-loading-node");
+      if (node) node.remove();
+    }
+
+    function handleSubmitQuery() {
+      const promptField = document.getElementById("user-prompt");
+      const sendBtn = document.getElementById("send-btn");
+      const text = promptField.value.trim();
+
+      if (!text) return;
+
+      promptField.value = "";
+      promptField.disabled = true;
+      sendBtn.disabled = true;
+      sendBtn.classList.add("opacity-50", "cursor-not-allowed");
+
+      appendMessageToTimeline('user', text);
+      injectLoadingIndicator();
+
+      google.script.run
+        .withSuccessHandler(function(serverReply) {
+          removeLoadingIndicator();
+          appendMessageToTimeline('ai', serverReply);
+          runningChatHistory.push({ sender: 'user', text: text });
+          runningChatHistory.push({ sender: 'ai', text: serverReply });
+          promptField.disabled = false;
+          sendBtn.disabled = false;
+          sendBtn.classList.remove("opacity-50", "cursor-not-allowed");
+          promptField.focus();
+        })
+        .withFailureHandler(function(err) {
+          removeLoadingIndicator();
+          appendMessageToTimeline('ai', "⚠️ Interface Bridge Connection Failure: " + err.toString());
+          promptField.disabled = false;
+          sendBtn.disabled = false;
+          sendBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        })
+        .askStandupNotes(text, runningChatHistory);
+    }
+
+    // =====================================================================
+    // CORE OUTCOME GENERATOR STUDIO FUNCTIONS
+    // =====================================================================
+    function executeStudioSynthesis() {
+      const inputField = document.getElementById("initiative-input");
+      const submitBtn = document.getElementById("synthesis-btn");
+      const text = inputField.value.trim();
+
+      if (!text) return;
+
+      inputField.disabled = true;
+      submitBtn.disabled = true;
+      submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+      submitBtn.innerText = "Synthesizing...";
+
+      document.getElementById("canvas-empty").classList.add("hidden");
+      document.getElementById("canvas-document").classList.add("hidden");
+      document.getElementById("canvas-loading").classList.remove("hidden");
+
+      google.script.run
+        .withSuccessHandler(function(response) {
+          inputField.disabled = false;
+          submitBtn.disabled = false;
+          submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+          submitBtn.innerText = "Synthesize Statement";
+          document.getElementById("canvas-loading").classList.add("hidden");
+
+          if (response.success) {
+            document.getElementById("markdown-container").innerHTML = marked.parse(response.markdownContent);
+            document.getElementById("doc-timestamp").innerText = new Date().toLocaleDateString() + " | Full Hydration Studio";
+
+            const citationsContainer = document.getElementById("citations-container");
+            citationsContainer.innerHTML = "";
+            
+            if (response.citations && response.citations.length > 0) {
+              response.citations.forEach(badge => {
+                const link = document.createElement("a");
+                link.href = badge.url;
+                link.target = "_blank";
+                link.className = "text-xs bg-slate-50 border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1";
+                link.innerHTML = `<span>🔗</span> <span class="truncate max-w-[240px]">${badge.title}</span>`;
+                citationsContainer.appendChild(link);
+              });
+            } else {
+              citationsContainer.innerHTML = `<span class="text-xs text-slate-400 italic">No direct reference URL footprints mapped.</span>`;
+            }
+            document.getElementById("canvas-document").classList.remove("hidden");
+          } else {
+            alert("Studio Pipeline Fault Detected: " + response.error);
+            document.getElementById("canvas-empty").classList.remove("hidden");
+          }
+        })
+        .withFailureHandler(function(err) {
+          inputField.disabled = false;
+          submitBtn.disabled = false;
+          submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+          submitBtn.innerText = "Synthesize Statement";
+          document.getElementById("canvas-loading").classList.add("hidden");
+          document.getElementById("canvas-empty").classList.remove("hidden");
+          alert("Critical Server Connectivity Failure: " + err.toString());
+        })
+        .generateOutcomeStatement(text);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
